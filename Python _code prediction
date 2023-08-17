@@ -22,7 +22,7 @@ gene_data = gene_expression_data.transpose()
 gene_data.head()
 
 # Load phenotype data
-phenotype_data = pd.read_csv('D:/Capulus_thera/Prostate_cancer_ML_analysis/TCGA.PRAD.sampleMap_PRAD_clinicalMatrix', sep="\t", index_col=0)  # Set the first column as index
+phenotype_data = pd.read_csv('TCGA.PRAD.sampleMap_PRAD_clinicalMatrix', sep="\t", index_col=0)  # Set the first column as index
 #View the pehnotype data
 phenotype_data.head()
 
