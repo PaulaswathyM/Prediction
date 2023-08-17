@@ -1,0 +1,123 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+
+
+# Load gene expression data
+gene_expression_data = pd.read_csv('HiSeqV2_prad',sep="\t",index_col=0)  # Assuming the first column contains sample IDs
+
+#View the expression file
+gene_expression_data.head()
+
+# Transpose the gene data because the expression file and the phenotype file has to be merged
+gene_data = gene_expression_data.transpose()
+
+#View the transposed file
+gene_data.head()
+
+# Load phenotype data
+phenotype_data = pd.read_csv('D:/Capulus_thera/Prostate_cancer_ML_analysis/TCGA.PRAD.sampleMap_PRAD_clinicalMatrix', sep="\t", index_col=0)  # Set the first column as index
+#View the pehnotype data
+phenotype_data.head()
+
+#To understand the information available in the phenotype data
+phenotype_data.columns.values
+
+# Join gene data and phenotype data on sample IDs because we want to retain the samples only having gene expression data
+data = gene_data.join(phenotype_data, how='inner')
+
+#View the final data
+data.head()
+
+
+# Target labels are in the 'sample_type' column
+y = data['sample_type']
+
+
+# For example, if you need to select the 14 genes of interest:
+genes_of_interest = ["DNER","IL20","FAP","CXCL6","CD34","CDH17","CRTAC1","IL18RAP","TRAF2","ADAMTS8","GZMB","SPINK5","F3","ICAM4"]  # Replace with your gene names
+
+
+# Features: Gene expression values for selected genes
+X = data[genes_of_interest]
+
+X.head()
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+#X: This is the feature matrix, containing your input data. It usually includes the data you want to use for prediction or classification, in this case, gene expression values.
+
+#y: This is the target vector, containing the labels you're trying to predict or classify. In your case, it's the 'sample_type' column from your phenotype data that indicates the type of the sample (tumor, normal, metastatic).
+
+#test_size: This parameter determines the proportion of your data that will be allocated to the testing set. In this case, test_size=0.2 means that 20% of the data will be used for testing, and the remaining 80% will be used for training.
+
+#random_state: This parameter sets the random seed for the random number generator. It ensures that if you run the code with the same random_state, you will get the same train-test split each time. This can be helpful for reproducibility.
+
+
+# Standardize the features
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+
+#In the line scaler = StandardScaler(), you are creating an instance of the StandardScaler class from the scikit-learn library. 
+#This instance, scaler, will be used to apply the standardization process to your feature data.
+
+
+# Train a Support Vector Machine (SVM) model
+svm_model = SVC(kernel='linear')
+svm_model.fit(X_train_scaled, y_train)
+
+
+#SVC stands for Support Vector Classifier, which is a type of machine learning model used for classification tasks. 
+#The SVC class is part of the scikit-learn library, a popular machine learning library in Python. 
+#SVC is used to implement Support Vector Machines (SVMs) for classification
+
+
+# Make predictions on the test set
+y_pred = svm_model.predict(X_test_scaled)
+y_pred
+
+# Evaluate the model
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy: {accuracy:.2f}")
+
+
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import roc_curve, auc
+
+# Assuming your y_test and y_pred are loaded and ready
+
+# Create a label encoder to convert categorical labels to numeric
+label_encoder = LabelEncoder()
+y_test_numeric = label_encoder.fit_transform(y_test)
+y_pred_numeric = label_encoder.transform(y_pred)  # Transform y_pred using the same encoder
+
+# Now you can compute the ROC curve and AUC
+fpr, tpr, thresholds = roc_curve(y_test_numeric, y_pred_numeric)
+roc_auc = auc(fpr, tpr)
+
+# Plot ROC curve
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (AUC = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic')
+plt.legend(loc="lower right")
+plt.show()
+
+
+
+
+
